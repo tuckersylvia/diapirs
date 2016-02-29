@@ -1,0 +1,365 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"save",
+				"save-only"
+			],
+			[
+				"own",
+				"own_window_type"
+			],
+			[
+				"start",
+				"start_number"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/home/tucker/.conkyrc",
+			"settings":
+			{
+				"buffer_size": 3522,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/tucker/bin/movie_maker.sh",
+			"settings":
+			{
+				"buffer_size": 222,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "#!/usr/bin/env python\n\n'''\ncamera calibration for distorted images with chess board samples\nreads distorted images, calculates the calibration and write undistorted images\nusage:\n    calibrate.py [--debug <output path>] [--square_size] [<image mask>]\ndefault values:\n    --debug:    ./output/\n    --square_size: 1.0\n    <image mask> defaults to ../data/left*.jpg\n'''\n\n# Python 2/3 compatibility\nfrom __future__ import print_function\n\nimport numpy as np\nimport cv2\n\n# local modules\nfrom common import splitfn\n\n# built-in modules\nimport os\n\nif __name__ == '__main__':\n    import sys\n    import getopt\n    from glob import glob\n\n    args, img_mask = getopt.getopt(sys.argv[1:], '', ['debug=', 'square_size='])\n    args = dict(args)\n    args.setdefault('--debug', './output/')\n    args.setdefault('--square_size', 1.0)\n    if not img_mask:\n        img_mask = '../data/left*.jpg'  # default\n    else:\n        img_mask = img_mask[0]\n\n    img_names = glob(img_mask)\n    debug_dir = args.get('--debug')\n    if not os.path.isdir(debug_dir):\n        os.mkdir(debug_dir)\n    square_size = float(args.get('--square_size'))\n\n    pattern_size = (9, 6)\n    pattern_points = np.zeros((np.prod(pattern_size), 3), np.float32)\n    pattern_points[:, :2] = np.indices(pattern_size).T.reshape(-1, 2)\n    pattern_points *= square_size\n\n    obj_points = []\n    img_points = []\n    h, w = 0, 0\n    img_names_undistort = []\n    for fn in img_names:\n        print('processing %s... ' % fn, end='')\n        img = cv2.imread(fn, 0)\n        if img is None:\n            print(\"Failed to load\", fn)\n            continue\n\n        h, w = img.shape[:2]\n        found, corners = cv2.findChessboardCorners(img, pattern_size)\n        if found:\n            term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)\n            cv2.cornerSubPix(img, corners, (5, 5), (-1, -1), term)\n\n        if debug_dir:\n            vis = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)\n            cv2.drawChessboardCorners(vis, pattern_size, corners, found)\n            path, name, ext = splitfn(fn)\n            outfile = debug_dir + name + '_chess.png'\n            cv2.imwrite(outfile, vis)\n            if found:\n                img_names_undistort.append(outfile)\n\n        if not found:\n            print('chessboard not found')\n            continue\n\n        img_points.append(corners.reshape(-1, 2))\n        obj_points.append(pattern_points)\n\n        print('ok')\n\n    # calculate camera distortion\n    rms, camera_matrix, dist_coefs, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, (w, h), None, None)\n\n    print(\"\\nRMS:\", rms)\n    print(\"camera matrix:\\n\", camera_matrix)\n    print(\"distortion coefficients: \", dist_coefs.ravel())\n\n    # undistort the image with the calibration\n    print('')\n    for img_found in img_names_undistort:\n        img = cv2.imread(img_found)\n\n        h,  w = img.shape[:2]\n        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coefs, (w, h), 1, (w, h))\n\n        dst = cv2.undistort(img, camera_matrix, dist_coefs, None, newcameramtx)\n\n        # crop and save the image\n        x, y, w, h = roi\n        dst = dst[y:y+h, x:x+w]\n        outfile = img_found + '_undistorted.png'\n        print('Undistorted image written to: %s' % outfile)\n        cv2.imwrite(outfile, dst)\n\n    cv2.destroyAllWindows()",
+			"file": "/home/tucker/python/calibrate.py",
+			"file_size": 3310,
+			"file_write_time": 131012328180931684,
+			"settings":
+			{
+				"buffer_size": 3310,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/tucker/python/common.py",
+			"settings":
+			{
+				"buffer_size": 6680,
+				"line_ending": "Unix",
+				"name": "#/usr/bin/env python"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 390.0,
+		"last_filter": "pack",
+		"selected_items":
+		[
+			[
+				"pack",
+				"Package Control: Install Package"
+			],
+			[
+				"vmen",
+				"View: Toggle Menu"
+			]
+		],
+		"width": 449.0
+	},
+	"console":
+	{
+		"height": 139.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/home/tucker/anaconda/testing/Python colormaps demo.py",
+		"/home/tucker/python/lenscorrection/batch-correct.sublime-project",
+		"/home/tucker/.config/sublime-text-3/Packages/Anaconda/Anaconda.sublime-settings",
+		"/home/tucker/.spyder2/spyder.ini",
+		"/media/teraid/raider/Backups/lazarus_ssd/tucker/Google Drive/maine/COS/pycode/vball.py",
+		"/home/tucker/python/lenscorrection/my_undistort.py",
+		"/home/tucker/python/lenscorrection/undistort.py",
+		"/home/tucker/.config/sublime-text-3/Packages/Default/Preferences.sublime-settings",
+		"/etc/conky/conky.conf",
+		"/home/tucker/build/proxpn-bash-client/proxpn.ovpn",
+		"/home/tucker/build/proXPN_exe_dump/config/proxpn.ovpn",
+		"/home/tucker/thielicke_thesis.ris",
+		"/home/tucker/build/OpenCorsairLink/menuscript.sh",
+		"/home/tucker/Downloads/makeTCMstructures.m",
+		"/home/tucker/Google Drive/MATLAB/OCG501Argo/OCG501Argo/flt_prof.m",
+		"/media/tucker/debian/home/tucker/Desktop/Research",
+		"/media/tucker/debian/home/tucker/Desktop/Windows",
+		"/home/tucker/Desktop/Streams2.03.sh",
+		"/media/tucker/LaCie/lazarus_ssd/tucker/bin/720moviemaker",
+		"/home/tucker/build/Streams203_Lnx/Streams2.03.sh"
+	],
+	"find":
+	{
+		"height": 25.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"~/hidapi/"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 3,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/home/tucker/.conkyrc",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3522,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1481,
+								1481
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/ShellScript/Shell-Unix-Generic.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 578.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/home/tucker/bin/movie_maker.sh",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 222,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								102,
+								102
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/ShellScript/Shell-Unix-Generic.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/home/tucker/python/calibrate.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3310,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3310,
+								3310
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 357.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/home/tucker/python/common.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6680,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6680,
+								6680
+							]
+						],
+						"settings":
+						{
+							"auto_name": "#/usr/bin/env python",
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3059.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 25.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "batch-correct.sublime-project",
+	"replace":
+	{
+		"height": 46.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"~/bin/movie_maker.sh"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+		"max_columns": 1
+	}
+}
